@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS user_recipe_submissions (
+  submission_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  recipe_name VARCHAR(160) NOT NULL,
+  description TEXT NULL,
+  ingredients_json LONGTEXT NOT NULL,
+  steps_json LONGTEXT NOT NULL,
+  prep_time_minutes INT NULL,
+  cook_time_minutes INT NULL,
+  servings INT NULL,
+  image_url TEXT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  admin_note TEXT NULL,
+  approved_recipe_id VARCHAR(160) NULL,
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP NULL,
+  reviewed_by INT NULL,
+  INDEX idx_user_recipe_status (status),
+  INDEX idx_user_recipe_user (user_id)
+);
