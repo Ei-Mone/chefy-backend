@@ -4790,6 +4790,40 @@ async function startServer() {
     process.exit(1);
   }
 }
+app.post(
+  "/api/admin/rebuild-ingredients",
+  requireAdmin,
+  async (req, res) => {
+    try {
 
+      await Ingredient.deleteMany({});
+
+      await Counter.updateOne(
+        { key: "ingredientId" },
+        { $set: { seq: 0 } },
+        { upsert: true }
+      );
+
+      await syncIngredientsFromRecipes();
+
+      const totalIngredients =
+        await Ingredient.countDocuments({});
+
+      res.json({
+        success: true,
+        message: "Ingredient collection rebuilt successfully",
+        totalIngredients
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to rebuild ingredients",
+        error: error.message
+      });
+    }
+  }
+);
 
 startServer();
