@@ -1882,47 +1882,55 @@ app.post(
 // GET ALL INGREDIENTS
 // =========================================================
 
-app.get(
+
+       app.get(
   "/api/ingredients",
   async (req, res) => {
     try {
 
-      const rows =
-        await Ingredient
-          .find({})
-          .sort({
-            ingredientName: 1
-          })
-          .lean();
+      const recipes = await Recipe.find({}).lean();
 
+      const ingredientSet = new Set();
+
+      for (const recipe of recipes) {
+
+        for (const rawIngredient of recipe.ingredients || []) {
+
+          const cleaned = normalizeIngredient(rawIngredient);
+
+          if (cleaned) {
+            ingredientSet.add(cleaned);
+          }
+        }
+      }
+
+      const ingredientNames =
+        [...ingredientSet].sort();
+
+      const ingredients =
+        ingredientNames.map(
+          (name, index) => ({
+            ingredient_id: index + 1,
+            ingredient_name: name
+          })
+        );
 
       res.json({
         success: true,
-
-        ingredients:
-          rows.map(
-            row => ({
-              ingredient_id:
-                row.ingredientId,
-
-              ingredient_name:
-                row.ingredientName
-            })
-          )
+        ingredients: ingredients
       });
 
     } catch (error) {
 
       res.status(500).json({
         success: false,
-        message:
-          "Failed to load ingredients",
-        error:
-          error.message
+        message: "Failed to load ingredients",
+        error: error.message
       });
     }
   }
 );
+
 
 
 // =========================================================
