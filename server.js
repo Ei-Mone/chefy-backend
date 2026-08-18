@@ -610,6 +610,8 @@ function formatRecipeDetail(recipe) {
 // =========================================================
 
 async function syncIngredientsFromRecipes() {
+
+  // Get every ingredient used by the recipe documents
   const names = await Recipe.distinct("ingredients");
 
   const cleanNames = [
@@ -620,27 +622,100 @@ async function syncIngredientsFromRecipes() {
     )
   ].sort();
 
-  for (const ingredientName of cleanNames) {
-    const existing = await Ingredient.findOne({
-      ingredientName: ingredientName
-    }).lean();
 
-    if (!existing) {
-      const ingredientId =
-        await nextSequence("ingredientId");
+  // Get ingredients already stored
+  const existingIngredients =
+    await Ingredient.find({}).lean();
 
-      await Ingredient.create({
-        ingredientId: ingredientId,
-        ingredientName: ingredientName
-      });
+
+  // Find the highest ingredient ID already in MongoDB
+  let highestIngredientId = 0;
+
+  for (const ingredient of existingIngredients) {
+    const id = Number(ingredient.ingredientId);
+
+    if (
+      Number.isFinite(id) &&
+      id > highestIngredientId
+    ) {
+      highestIngredientId = id;
     }
   }
 
+
+  // Synchronize MongoDB counter with existing IDs
+  await Counter.findOneAndUpdate(
+    {
+      key: "ingredientId"
+    },
+
+    {
+      $max: {
+        seq: highestIngredientId
+      }
+    },
+
+    {
+      upsert: true,
+      returnDocument: "after"
+    }
+  );
+
+
+  const existingNames =
+    new Set(
+      existingIngredients.map(
+        ingredient =>
+          normalizeIngredient(
+            ingredient.ingredientName
+          )
+      )
+    );
+
+
+  let added = 0;
+
+
+  // Add ingredients that do not exist yet
+  for (const ingredientName of cleanNames) {
+
+    if (
+      existingNames.has(
+        ingredientName
+      )
+    ) {
+      continue;
+    }
+
+
+    const ingredientId =
+      await nextSequence(
+        "ingredientId"
+      );
+
+
+    await Ingredient.create({
+      ingredientId:
+        ingredientId,
+
+      ingredientName:
+        ingredientName
+    });
+
+
+    existingNames.add(
+      ingredientName
+    );
+
+    added++;
+  }
+
+
   console.log(
-    `Ingredient index ready: ${cleanNames.length} recipe ingredients`
+    `Ingredient index ready: ${cleanNames.length} ingredients (${added} added)`
   );
 }
-
+       
 
 // =========================================================
 // ADMIN AUTHENTICATION MIDDLEWARE
