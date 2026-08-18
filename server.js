@@ -453,9 +453,43 @@ const CommunityRecipeSubmission =
 // =========================================================
 
 function normalizeIngredient(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
+  let text = String(value || "")
+    .toLowerCase()
+    .trim();
+
+  // Remove text in brackets, for example "(optional)"
+  text = text.replace(/\([^)]*\)/g, " ");
+
+  // Remove common ending notes
+  text = text.replace(/,\s*(or\s+)?to\s+taste.*$/g, "");
+  text = text.replace(/,\s*as\s+needed.*$/g, "");
+
+  // Remove leading quantity:
+  // 2, 2.5, 1/2, 1 1/2, ½ etc.
+  text = text.replace(
+    /^\s*(?:\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞])\s*/i,
+    ""
+  );
+
+  // Remove common measurement units
+  text = text.replace(
+    /^\s*(?:tablespoons?|tablespoon|tbsp|tbsps|teaspoons?|teaspoon|tsp|tsps|cups?|cup|grams?|gram|g|kilograms?|kilogram|kg|milliliters?|millilitres?|ml|liters?|litres?|liter|litre|l|ounces?|ounce|oz|pounds?|pound|lbs?|cloves?|clove|pieces?|piece|slices?|slice|cans?|can|bunches?|bunch|sprigs?|sprig|stalks?|stalk|heads?|head|handfuls?|handful)\b\.?\s*/i,
+    ""
+  );
+
+  // Remove preparation descriptions
+  text = text.replace(
+    /\b(?:finely|roughly|freshly|fresh|chopped|minced|shredded|diced|sliced|crushed|grated|peeled|seeded|softened|melted|divided|optional)\b/gi,
+    " "
+  );
+
+  // Clean extra punctuation and spaces
+  text = text
+    .replace(/\s+/g, " ")
+    .replace(/^[,\s-]+|[,\s-]+$/g, "")
+    .trim();
+
+  return text;
 }
 
 
